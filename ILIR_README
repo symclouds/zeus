@@ -1,0 +1,8 @@
+Add the Lambda functions to the ./src/* directory.
+Make sure that as we are building we download all their dependencies
+
+npm run build
+
+It will create the indes.js and index.map for each Lambda Function in the disk/functionName folder. 
+
+
