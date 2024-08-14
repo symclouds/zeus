@@ -18,6 +18,7 @@
     },
     "devDependencies": {
         "@aws-sdk/client-ses": "^3.624.0",
+        "aws-cdk-lib": "^2.151.0",
         "aws-jwt-verify": "^4.0.1",
         "aws-sdk": "2.1145.0",
         "esbuild": "^0.14.42",
