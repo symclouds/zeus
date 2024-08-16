@@ -9,23 +9,8 @@ import * as apigw from 'aws-cdk-lib/aws-apigateway';
 import { Construct } from 'constructs';
 import { RemovalPolicy } from 'aws-cdk-lib'
 
-// First read in zeus.json it will contain the runtime parameters needed by the
-// MFA Lambda function of users identity emails will be sent through
-// It will also contain Usage Plan information for API Gateway requests/second and burst
-// ... Any other configurtion parameters that are warranted ...
-
-// First it is necessary to Build the Lambda functions with esbuild
-// Run the build instructions: npm run build && npm run package
-// this will create the artifact zip files needed for Lambdas in the ./assets/
-
-
 // Main Function
 const app = new cdk.App();
-
-// First it is necessary to Build the Lambda functions with esbuild
-// Run the build instructions: npm run build && npm run package
-// this will create the artifact zip files needed for Lambdas in the ./assets/
-//const resp = exec('cd .. && npm run build && npm run package');
 
 // Helper function Generate API Key of Length (keyLength)
 function apiKeyGen(keyLength : any) {
@@ -354,8 +339,14 @@ export class Zeus extends cdk.Stack {
 
 // Create the Stack
 new Zeus(app, "ZeusStack", {});
+
+// If we wish to create the stack in another region for this account
+// and not use the default region of the profile we can set it here.
+// E.G.
+// new Zeus(app, "ZeusStack", {})
 //    env: {region: 'ca-central-1'},
 //});
 
-// This call generates the cloudFormation templates and thus issuing 'cdk synth' externally is not required
+// This call generates the cloudFormation templates and thus issuing 'cdk synth' 
+// externally is not required but it is considered good practice
 app.synth();
