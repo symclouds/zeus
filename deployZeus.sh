@@ -27,7 +27,7 @@ while getopts ":e:a:r:p:" o; do
 done
 
 # Make sure the user enters and email address
-if [ -z "${userEmail}" ] || [ -z "${account}"] || [ -z "${region}"] || [ -z "${profile}"]; then
+if [ -z "${userEmail}" ] || [ -z "${account}" ] || [ -z "${region}" ] || [ -z "${profile}" ]; then
     usage
 fi
 
@@ -36,23 +36,9 @@ echo "***************************************************"
 echo "* >>> Starting zeus deployemnt tool using aws cdk *"
 echo "***************************************************"
 echo ""
-echo ">>> Building sources ... "
-echo ""
-T=$(npm run build --silent && npm run package --silent)
-if [ $? -ne 0 ]
-then    
-    echo ">>> Error: Problem with building the Lambda source packages."
-    echo ">>>        Did you remember to run: "npm i" ?"
-    exit 1       
-else
-    echo ""
-    echo ">>> ... Successfully built all Lambda sources "
-fi
-
-echo ""
 echo ">>> Bootstraping the AWS Enviroment ... Please be patient ... "
 echo ""
-T=$(cd cdk && npm i && echo "{\""email"\":\""${userEmail}\""}"  > cdk.context.json  && cdk bootstrap aws://${account}/${region} --profile ${profile})
+T=$(npm i && echo "{\""email"\":\""${userEmail}\""}"  > cdk.context.json  && cdk bootstrap aws://${account}/${region} --profile ${profile})
 if [ $? -ne 0 ]
 then    
     echo ">>> Error: Problem with bootstraping to AWS CDK."
@@ -64,7 +50,7 @@ fi
 
 echo ""
 echo ">>> Synthesizing AWS CloudFormation Templates for the Zeus"
-T=$(cd cdk && cdk synth )
+T=$(cdk synth )
 if [ $? -ne 0 ]
 then    
     echo ">>> Error: Problem with synthesizing the Cloudformation templates for Zeus"
@@ -76,7 +62,7 @@ fi
 
 echo ""
 echo ">>> Deploying Zeus to AWS ... Please be patient "
-T=$(cd cdk && cdk deploy --all --require-approval never --profile ${profile} )
+T=$(cdk deploy --all --require-approval never --profile ${profile} )
 if [ $? -ne 0 ]
 then    
     echo ">>> Error: Problem with deploying Zeus to AWS"
@@ -88,8 +74,8 @@ fi
 
 echo ""
 echo "****** You're all set ******"
-echo " Please Make note of the Outputs: because they will be needed for integration"
-echo " Take care!"
+echo " >>> Please make note of the <<Outputs>> above because they will be needed for integration"
+
 
 
 

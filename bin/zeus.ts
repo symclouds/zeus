@@ -8,7 +8,6 @@ import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as apigw from 'aws-cdk-lib/aws-apigateway';
 import { Construct } from 'constructs';
 import { RemovalPolicy } from 'aws-cdk-lib'
-import {exec} from 'child-process-promise';
 
 // First read in zeus.json it will contain the runtime parameters needed by the
 // MFA Lambda function of users identity emails will be sent through
@@ -17,15 +16,7 @@ import {exec} from 'child-process-promise';
 
 // First it is necessary to Build the Lambda functions with esbuild
 // Run the build instructions: npm run build && npm run package
-// this will create the artifact zip files needed for Lambdas in the ./dist/
-//exec('cd .. && npm run build && npm run package');
-
-
-//const build = async () => {
-//    const result = await exec('cd .. && npm run build && npm run package');
-//    console.log(result)
-//}
-//await build();
+// this will create the artifact zip files needed for Lambdas in the ./assets/
 
 
 // Main Function
@@ -33,7 +24,7 @@ const app = new cdk.App();
 
 // First it is necessary to Build the Lambda functions with esbuild
 // Run the build instructions: npm run build && npm run package
-// this will create the artifact zip files needed for Lambdas in the ./dist/
+// this will create the artifact zip files needed for Lambdas in the ./assets/
 //const resp = exec('cd .. && npm run build && npm run package');
 
 // Helper function Generate API Key of Length (keyLength)
@@ -199,7 +190,7 @@ export class Zeus extends cdk.Stack {
         const login = new lambda.Function(this, "loginLambda", {
             functionName: 'login',
             runtime: lambda.Runtime.NODEJS_LATEST,
-            code: lambda.Code.fromAsset("../dist/login.zip"),
+            code: lambda.Code.fromAsset("./assets/login.zip"),
             logRetention: 1,
             timeout: cdk.Duration.seconds(15),
             handler: "index.handler",
@@ -211,7 +202,7 @@ export class Zeus extends cdk.Stack {
         const register = new lambda.Function(this, "registerLambda", {
             functionName: 'register',
             runtime: lambda.Runtime.NODEJS_LATEST,
-            code: lambda.Code.fromAsset("../dist/register.zip"),
+            code: lambda.Code.fromAsset("./assets/register.zip"),
             logRetention: 1,
             timeout: cdk.Duration.seconds(15),
             handler: "index.handler",
@@ -223,7 +214,7 @@ export class Zeus extends cdk.Stack {
         const mfa = new lambda.Function(this, "mfaLambda", {
             functionName: 'mfa',
             runtime: lambda.Runtime.NODEJS_LATEST,
-            code: lambda.Code.fromAsset("../dist/mfa.zip"),
+            code: lambda.Code.fromAsset("./assets/mfa.zip"),
             logRetention: 1,
             timeout: cdk.Duration.seconds(15),
             handler: "index.handler",
@@ -235,7 +226,7 @@ export class Zeus extends cdk.Stack {
         const logout = new lambda.Function(this, "logoutLambda", {
             functionName: 'logout',
             runtime: lambda.Runtime.NODEJS_LATEST,
-            code: lambda.Code.fromAsset("../dist/logout.zip"),
+            code: lambda.Code.fromAsset("./assets/logout.zip"),
             logRetention: 1,
             timeout: cdk.Duration.seconds(15),
             handler: "index.handler",
@@ -247,7 +238,7 @@ export class Zeus extends cdk.Stack {
         const reset = new lambda.Function(this, "resetLambda", {
             functionName: 'reset',
             runtime: lambda.Runtime.NODEJS_LATEST,
-            code: lambda.Code.fromAsset("../dist/reset.zip"),
+            code: lambda.Code.fromAsset("./assets/reset.zip"),
             logRetention: 1,
             timeout: cdk.Duration.seconds(15),
             handler: "index.handler",
@@ -259,7 +250,7 @@ export class Zeus extends cdk.Stack {
         const zeus = new lambda.Function(this, "zeusLambda", {
             functionName: 'zeus',
             runtime: lambda.Runtime.NODEJS_LATEST,
-            code: lambda.Code.fromAsset("../dist/zeus.zip"),
+            code: lambda.Code.fromAsset("./assets/zeus.zip"),
             logRetention: 1,
             timeout: cdk.Duration.seconds(15),
             handler: "index.handler",

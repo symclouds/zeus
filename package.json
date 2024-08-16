@@ -1,29 +1,28 @@
 {
-    "name": "zeus-nodejs-esbuild",
-    "version": "1.0.0",
-    "main": "index.js",
-    "license": "MIT",
-    "scripts": {
-        "build": "rm -rf dist && esbuild ./src/lambdaFX/* --entry-names=[dir]/[name]/index --bundle --minify --sourcemap --platform=node --target=node20.16 --outdir=dist",
-        "package": "cd dist && for f in * ; do ([ -d \"$f\" ] && cd $f && zip ../$f.zip *) ; done",
-        "package:unbundled": "rm -rf node_modules unbundled.zip && npm i --only=prod && zip -r unbundled.zip src/* node_modules/*",
-        "package:large": "rm -rf node_modules large.zip && npm i && zip -r large.zip src/* node_modules/*",
-        "predeploy": "npm i && npm run build && npm run package:unbundled && npm run package:large",
-        "deploy": "cd infrastructure && npm run cdk deploy",
-        "destroy": "cd infrastructure && npm run cdk destroy"
-    },
-    "dependencies": {
-        "@aws-sdk/client-dynamodb": "3.100.0",
-        "@aws-sdk/lib-dynamodb": "3.100.0"
-    },
-    "devDependencies": {
-        "@aws-sdk/client-ses": "^3.624.0",
-        "aws-cdk-lib": "^2.151.0",
-        "aws-jwt-verify": "^4.0.1",
-        "aws-sdk": "2.1145.0",
-        "esbuild": "^0.14.42",
-        "install": "^0.13.0",
-        "jsonwebtoken": "^9.0.2",
-        "npm": "^10.8.2"
-    }
+  "name": "zeus",
+  "version": "0.1.0",
+  "bin": {
+    "zeus": "bin/zeus.js"
+  },
+  "scripts": {
+    "clean": "rm -rf node_modules cdk.out cdk.context.json",
+    "build": "tsc",
+    "watch": "tsc -w",
+    "test": "jest",
+    "cdk": "cdk"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "@types/node": "^22.3.0",
+    "aws-cdk": "^2.152.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.5",
+    "ts-node": "^10.9.2",
+    "typescript": "~5.5.3"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.152.0",
+    "constructs": "^10.0.0",
+    "source-map-support": "^0.5.21"
+  }
 }
