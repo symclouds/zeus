@@ -1,0 +1,5 @@
+{
+    "profile" : "zeus",
+    "logRetentionPeriod" : 1,
+    "mfaEmail" : "iljazi@gmail.com"
+}

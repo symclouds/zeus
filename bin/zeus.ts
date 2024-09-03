@@ -8,6 +8,7 @@ import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as apigw from 'aws-cdk-lib/aws-apigateway';
 import { Construct } from 'constructs';
 import { RemovalPolicy } from 'aws-cdk-lib'
+import * as logs from 'aws-cdk-lib/aws-logs'
 
 // Main Function
 const app = new cdk.App();
@@ -22,14 +23,29 @@ function apiKeyGen(keyLength : any) {
     return key;
   }
 
+// Create log groups for all the Lambda functions
+function createLogGroup(scope: Construct, fx: string, 
+    logRetention: any, stackName: string) {
+    const construct = stackName + '_LogGroup_' + fx
+    const logGroupName = "/aws/lambda/" + fx
+    new logs.LogGroup(scope, construct, {
+      logGroupName: logGroupName,
+      retention: logRetention,
+      removalPolicy: cdk.RemovalPolicy.DESTROY
+    });
+  }
+
 // Zeus Deployment Stack
 export class Zeus extends cdk.Stack {
     constructor(scope: Construct, id: string, props?: cdk.StackProps) {
         super(scope, id, props);
 
-        // Get the email identity required by SES to send email messages
-        const userEmail = this.node.tryGetContext('email');
-        console.log("User email provided in context is: " + userEmail)
+        // Get the Stack Name of this deployment
+        const stackName = cdk.Stack.of(this).stackName;
+
+        // Get the user email and logretention period required by SES and Lambda Log Groups 
+        const userEmail = this.node.tryGetContext('mfaEmail');
+        const logRetentionPeriod = this.node.tryGetContext('logRetentionPeriod');
 
         // Create DynamoDB Tables
         const usersTable = new dynamodb.Table(this, "usersTable", {
@@ -147,7 +163,7 @@ export class Zeus extends cdk.Stack {
             effect: iam.Effect.ALLOW,
             actions: ["ses:SendEmail"],
             resources: [identity.emailIdentityArn]
-}));
+        }));
 
         // Logout
         logoutRole.addToPolicy(new iam.PolicyStatement({
@@ -170,78 +186,85 @@ export class Zeus extends cdk.Stack {
             resources: [usersTable.tableArn]
         }));
 
-        // Create Lambda Functions
+        // Create Lambda Functions & Log Groups
         // Login
+        const loginFxName = 'login';
         const login = new lambda.Function(this, "loginLambda", {
-            functionName: 'login',
+            functionName: loginFxName,
             runtime: lambda.Runtime.NODEJS_LATEST,
             code: lambda.Code.fromAsset("./assets/login.zip"),
-            logRetention: 1,
             timeout: cdk.Duration.seconds(15),
             handler: "index.handler",
             memorySize: 128,
             role: loginRole
         });
+        createLogGroup(this, loginFxName, logRetentionPeriod, stackName);
+
 
         // Register
+        const registerFxName = 'register';
         const register = new lambda.Function(this, "registerLambda", {
-            functionName: 'register',
+            functionName: registerFxName,
             runtime: lambda.Runtime.NODEJS_LATEST,
             code: lambda.Code.fromAsset("./assets/register.zip"),
-            logRetention: 1,
             timeout: cdk.Duration.seconds(15),
             handler: "index.handler",
             memorySize: 128,
             role: registerRole
         });
+        createLogGroup(this, registerFxName, logRetentionPeriod, stackName);
 
         // MFA
+        const mfaFxName = 'mfa';
         const mfa = new lambda.Function(this, "mfaLambda", {
-            functionName: 'mfa',
+            functionName: mfaFxName,
             runtime: lambda.Runtime.NODEJS_LATEST,
             code: lambda.Code.fromAsset("./assets/mfa.zip"),
-            logRetention: 1,
             timeout: cdk.Duration.seconds(15),
             handler: "index.handler",
             memorySize: 128,
             role: mfaRole
         });
+        createLogGroup(this, mfaFxName, logRetentionPeriod, stackName);
 
         // Logout
+        const logoutFxName = 'logout';
         const logout = new lambda.Function(this, "logoutLambda", {
-            functionName: 'logout',
+            functionName: logoutFxName,
             runtime: lambda.Runtime.NODEJS_LATEST,
             code: lambda.Code.fromAsset("./assets/logout.zip"),
-            logRetention: 1,
             timeout: cdk.Duration.seconds(15),
             handler: "index.handler",
             memorySize: 128,
             role: logoutRole
         });
+        createLogGroup(this, logoutFxName, logRetentionPeriod, stackName);
 
         // Reset
+        const resetFxName = 'reset';
         const reset = new lambda.Function(this, "resetLambda", {
-            functionName: 'reset',
+            functionName: resetFxName,
             runtime: lambda.Runtime.NODEJS_LATEST,
             code: lambda.Code.fromAsset("./assets/reset.zip"),
-            logRetention: 1,
             timeout: cdk.Duration.seconds(15),
             handler: "index.handler",
             memorySize: 128,
             role: resetRole
         });
+        createLogGroup(this, resetFxName, logRetentionPeriod, stackName);
 
         // Zeus
+        const zeusFxName = 'zeus';
         const zeus = new lambda.Function(this, "zeusLambda", {
-            functionName: 'zeus',
+            functionName: zeusFxName,
             runtime: lambda.Runtime.NODEJS_LATEST,
             code: lambda.Code.fromAsset("./assets/zeus.zip"),
-            logRetention: 1,
             timeout: cdk.Duration.seconds(15),
             handler: "index.handler",
             memorySize: 128,
             role: mfaRole
         });
+        createLogGroup(this, zeusFxName, logRetentionPeriod, stackName);
 
         // Create API Gateway with api-key
         const api = new apigw.RestApi(this, "AuthApi", {
@@ -333,7 +356,8 @@ export class Zeus extends cdk.Stack {
         // Print the Integration information for the user
         // The Stage URI will be displayed by the cdk upon completion
         // The API-Key which is needed by the users is also printed here
-        new cdk.CfnOutput(this, 'API-Key', { value: keyValue, exportName: "Api-Key" });
+        new cdk.CfnOutput(this, 'ZeusApiKey', { value: keyValue, exportName: "ZeusApiKey" });
+        new cdk.CfnOutput(this, "ZeusEndpoint", { key: "ZeusEndpoint", value: api.url});
     }
 }
 
