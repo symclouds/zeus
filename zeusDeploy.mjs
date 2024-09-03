@@ -1,6 +1,6 @@
 import { readFile, writeFile } from "fs/promises";
 import { execSync } from "node:child_process";
-import { v4 as uuidv4 } from 'uuid';
+//import { v4 as uuidv4 } from 'uuid';
 import qrcode from "qrcode-terminal";
 
 //////////////////////////////////
@@ -113,7 +113,7 @@ await writeFile('./' + cdkContextFilename, JSON.stringify(context, null, 2), (er
 });
 
 // Generate the bootstrap command
-var bootstrapCMD = "cdk bootstrap " + "aws://" + account + "/" + defaultRegion;
+var bootstrapCMD = "cdk bootstrap " + "aws://" + account + "/" + defaultRegion + " ";
 bootstrapCMD += "--profile " + profile + " >> " + deployLogFile + " 2>&1";
 
 // console.log(bootstrapCMD);
