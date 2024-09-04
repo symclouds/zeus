@@ -1,5 +1,5 @@
 {
-    "profile" : "zeus",
+    "profile" : "cerberus",
     "logRetentionPeriod" : 1,
-    "mfaEmail" : "iljazi@gmail.com"
+    "mfaEmail" : "cerberus-security@symclouds.com"
 }
