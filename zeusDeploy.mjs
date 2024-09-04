@@ -86,6 +86,15 @@ cmdOutput = cmd("aws ec2 describe-regions --query 'Regions[].{Name:RegionName}' 
 );
 const enabledRegions = cmdOutput.split("\n").filter(Boolean);
 
+// Create JWT Public/Private Key Pairs
+cmd("openssl genrsa -out private.pem 4096", "Unable to generate RSA Private Key required for JWT ... exiting");
+cmd("openssl rsa -in private.pem -pubout -out public.pem", "Unable to generate RSA Public Key required for JWT ... exiting");
+
+// Update the zip assets with the corresponding public/private keys
+cmd("zip ./assets/login.zip private.pem", "Unable to embedd private key file to login.zip ... exiting");
+cmd("zip ./assets/register.zip public.pem", "Unable to embedd public key file to register.zip ... exiting");
+cmd("zip ./assets/zeus.zip public.pem", "Unable to embedd public key file to zeus.zip ... exiting");
+
 //////////////////////////////////
 //                              //
 //    Checking Configuration    //
@@ -131,8 +140,8 @@ cmd("echo " + deployCMD + " >> " + deployLogFile);
 //          Deployment          //
 //                              //
 //////////////////////////////////
-cmd(bootstrapCMD, "Something went wrong bootstrapping the environment, see: deploy.log");
-cmd(deployCMD, "Something went wrong while deploying the zeus AuthN AuthZ system stacks, see: deploy.log");
+//cmd(bootstrapCMD, "Something went wrong bootstrapping the environment, see: deploy.log");
+//cmd(deployCMD, "Something went wrong while deploying the zeus AuthN AuthZ system stacks, see: deploy.log");
 
 //////////////////////////////////
 //                              //

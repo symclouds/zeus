@@ -8,7 +8,7 @@
     "init": "npm i",
     "deploy": "node zeusDeploy.mjs",
     "destroy": "node zeusDestroy.mjs",
-    "clean": "rm -rf node_modules cdk.out cdk.context.json",
+    "clean": "rm -rf node_modules cdk.out cdk.context.json public.pem private.pem",
     "build": "tsc",
     "watch": "tsc -w",
     "test": "jest",
