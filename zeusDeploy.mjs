@@ -95,7 +95,7 @@ cmd("openssl rsa -in private.pem -pubout -out public.pem", "Unable to generate R
 
 // Update the zip assets with the corresponding public/private keys
 cmd("zip ./assets/login.zip private.pem", "Unable to embedd private key file to login.zip ... exiting");
-cmd("zip ./assets/register.zip public.pem", "Unable to embedd public key file to register.zip ... exiting");
+cmd("zip ./assets/refresh.zip private.pem", "Unable to embedd private key file to refresh.zip ... exiting");
 cmd("zip ./assets/zeus.zip public.pem", "Unable to embedd public key file to zeus.zip ... exiting");
 
 //////////////////////////////////
