@@ -48,7 +48,7 @@ export class Zeus extends cdk.Stack {
         const logRetentionPeriod = this.node.tryGetContext('logRetentionPeriod');
         const accessTokenDuration = this.node.tryGetContext('accessTokenDuration');
         const refreshTokenDuration = this.node.tryGetContext('refreshTokenDuration');
-        const maxSessions = this.node.tryGetContext('maxSessions');
+        const maxSessions = this.node.tryGetContext('maxSessions').toString();
 
         // Create DynamoDB Tables
         const usersTable = new dynamodb.Table(this, "usersTable", {
@@ -223,7 +223,7 @@ export class Zeus extends cdk.Stack {
             environment: {
                 accessD: accessTokenDuration,
                 refreshD: refreshTokenDuration,
-                sessions: maxSessions.toString()
+                sessions: maxSessions
             },
             memorySize: 128,
             role: loginRole
