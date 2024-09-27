@@ -223,7 +223,7 @@ export class Zeus extends cdk.Stack {
             environment: {
                 accessD: accessTokenDuration,
                 refreshD: refreshTokenDuration,
-                sessions: maxSessions
+                sessions: maxSessions.toString()
             },
             memorySize: 128,
             role: loginRole
