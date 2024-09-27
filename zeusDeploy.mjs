@@ -68,6 +68,9 @@ const zeusConfigObj = JSON.parse(zeusConfigFile);
 const profile = zeusConfigObj.profile;
 const mfaEmail = zeusConfigObj.mfaEmail;
 const logRetentionPeriod = zeusConfigObj.logRetentionPeriod;
+const accessTokenDuration = zeusConfigObj.accessTokenDuration;
+const refreshTokenDuration = zeusConfigObj.refreshTokenDuration;
+const maxSessions = zeusConfigObj.maxSessions;
 
 // Get the account number and default region of the aws cli profile deploying zeus
 // Also get the list of enabled regions on AWS for this account number
@@ -111,7 +114,10 @@ if(!isRegionEnabled(defaultRegion, enabledRegions))
 // Generate CDK Context Object
 const context = {
     logRetentionPeriod: logRetentionPeriod,
-    mfaEmail: mfaEmail
+    mfaEmail: mfaEmail,
+    accessTokenDuration : accessTokenDuration,
+    refreshTokenDuration : refreshTokenDuration,
+    maxSessions : maxSessions,
 };
 
 // Write CDK Context Object to filesystem

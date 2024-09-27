@@ -44,15 +44,18 @@ export class Zeus extends cdk.Stack {
         const stackName = cdk.Stack.of(this).stackName;
 
         // Get the user email and logretention period required by SES and Lambda Log Groups 
-        const userEmail = this.node.tryGetContext('mfaEmail');
+        const mfaEmail = this.node.tryGetContext('mfaEmail');
         const logRetentionPeriod = this.node.tryGetContext('logRetentionPeriod');
+        const accessTokenDuration = this.node.tryGetContext('accessTokenDuration');
+        const refreshTokenDuration = this.node.tryGetContext('refreshTokenDuration');
+        const maxSessions = this.node.tryGetContext('maxSessions');
 
         // Create DynamoDB Tables
         const usersTable = new dynamodb.Table(this, "usersTable", {
             tableName: "users",
             partitionKey: {
                 name: "email",
-            type: dynamodb.AttributeType.STRING,
+                type: dynamodb.AttributeType.STRING,
             },
             billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
             removalPolicy: RemovalPolicy.DESTROY,
@@ -64,13 +67,17 @@ export class Zeus extends cdk.Stack {
                 name: "email",
                 type: dynamodb.AttributeType.STRING,
             },
+            sortKey: {
+                name: "s_id",
+                type: dynamodb.AttributeType.STRING
+              },
             billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
             removalPolicy: RemovalPolicy.DESTROY,
         });
 
         // Create SES identity to send emails for multi-factor authentication
         const identity = new ses.EmailIdentity(this, 'Identity', {
-            identity: ses.Identity.email(userEmail)
+            identity: ses.Identity.email(mfaEmail)
         });
 
         // Create Lambda Functions
@@ -79,6 +86,7 @@ export class Zeus extends cdk.Stack {
         const mfaRoleName = "mfaRole";
         const logoutRoleName = "logoutRole";
         const resetRoleName = "resetRole";
+        const refreshRoleName = "refreshRole";
         const zeusRoleName = "zeusRole";
 
         // Generate Roles ...
@@ -133,6 +141,16 @@ export class Zeus extends cdk.Stack {
             ]
         });
 
+        // Refresh Role
+        // Create New IAM Role with Lambda Basic Execution Role
+        const refreshRole = new iam.Role(this, refreshRoleName, {
+            roleName: refreshRoleName,
+            assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),   // required
+            managedPolicies: [
+                iam.ManagedPolicy.fromAwsManagedPolicyName("service-role/AWSLambdaBasicExecutionRole")
+            ]
+        });
+
         // Zeus Role
         // Create New IAM Role with Lambda Basic Execution Role
         const zeusRole = new iam.Role(this, zeusRoleName, {
@@ -147,7 +165,7 @@ export class Zeus extends cdk.Stack {
         // Login
         loginRole.addToPolicy(new iam.PolicyStatement({
             effect: iam.Effect.ALLOW,
-            actions: [ "dynamodb:PutItem","dynamodb:GetItem"],
+            actions: ["dynamodb:GetItem","dynamodb:Query","dynamodb:UpdateItem"],
             resources: [ usersTable.tableArn, sessionsTable.tableArn ]
         }));
 
@@ -179,6 +197,13 @@ export class Zeus extends cdk.Stack {
             resources: [usersTable.tableArn]
         }));
 
+        // Refresh
+        refreshRole.addToPolicy(new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: ["dynamodb:GetItem","dynamodb:Query","dynamodb:UpdateItem"],
+            resources: [ usersTable.tableArn, sessionsTable.tableArn ]
+        }));
+
         // Zeus
         zeusRole.addToPolicy(new iam.PolicyStatement({
             effect: iam.Effect.ALLOW,
@@ -195,11 +220,15 @@ export class Zeus extends cdk.Stack {
             code: lambda.Code.fromAsset("./assets/login.zip"),
             timeout: cdk.Duration.seconds(15),
             handler: "index.handler",
+            environment: {
+                accessD: accessTokenDuration,
+                refreshD: refreshTokenDuration,
+                sessions: maxSessions
+            },
             memorySize: 128,
             role: loginRole
         });
         createLogGroup(this, loginFxName, logRetentionPeriod, stackName);
-
 
         // Register
         const registerFxName = 'register';
@@ -222,6 +251,9 @@ export class Zeus extends cdk.Stack {
             code: lambda.Code.fromAsset("./assets/mfa.zip"),
             timeout: cdk.Duration.seconds(15),
             handler: "index.handler",
+            environment: {
+                identity: mfaEmail
+            },
             memorySize: 128,
             role: mfaRole
         });
@@ -253,6 +285,24 @@ export class Zeus extends cdk.Stack {
         });
         createLogGroup(this, resetFxName, logRetentionPeriod, stackName);
 
+       // Refresh
+       const refreshFxName = 'refresh';
+       const refresh = new lambda.Function(this, "refreshLambda", {
+            functionName: refreshFxName,
+            runtime: lambda.Runtime.NODEJS_LATEST,
+            code: lambda.Code.fromAsset("./assets/refresh.zip"),
+            timeout: cdk.Duration.seconds(15),
+            handler: "index.handler",
+            environment: {
+                accessD: accessTokenDuration,
+                refreshD: refreshTokenDuration,
+                sessions: maxSessions
+            },
+           memorySize: 128,
+           role: refreshRole
+       });
+       createLogGroup(this, refreshFxName, logRetentionPeriod, stackName);        
+
         // Zeus
         const zeusFxName = 'zeus';
         const zeus = new lambda.Function(this, "zeusLambda", {
@@ -262,7 +312,7 @@ export class Zeus extends cdk.Stack {
             timeout: cdk.Duration.seconds(15),
             handler: "index.handler",
             memorySize: 128,
-            role: mfaRole
+            role: zeusRole
         });
         createLogGroup(this, zeusFxName, logRetentionPeriod, stackName);
 
@@ -302,9 +352,13 @@ export class Zeus extends cdk.Stack {
         // Add the usage plan to the API Stage
         usagePlan.addApiStage({ stage: api.deploymentStage });
 
+        // Create the Zeus Authorizer
+        const zeusAuthorizer = new apigw.TokenAuthorizer(this, 'zeus', {
+            handler: zeus
+        });
+
         // Finally we add the resources to the Lambda Functions
         // Add triggers and Invoke Permissions to Lambda Functions from API GW Resources
-
         // Login
         login.grantInvoke(new iam.ServicePrincipal('apigateway.amazonaws.com'));
         const loginLambdaIntegration = new apigw.LambdaIntegration(login);
@@ -333,7 +387,8 @@ export class Zeus extends cdk.Stack {
         logout.grantInvoke(new iam.ServicePrincipal('apigateway.amazonaws.com'));
         const logoutLambdaIntegration = new apigw.LambdaIntegration(logout);
         api.root.addResource("logout").addMethod("POST", logoutLambdaIntegration, {
-            authorizationType: apigw.AuthorizationType.NONE,
+            authorizationType: apigw.AuthorizationType.CUSTOM,
+            authorizer: zeusAuthorizer,
             apiKeyRequired: true
         });
 
@@ -345,11 +400,12 @@ export class Zeus extends cdk.Stack {
             apiKeyRequired: true
         });
 
-        // Zeus
-        zeus.grantInvoke(new iam.ServicePrincipal('apigateway.amazonaws.com'));
-        const zeusLambdaIntegration = new apigw.LambdaIntegration(zeus);
-        api.root.addResource("zeus").addMethod("POST", zeusLambdaIntegration, {
-            authorizationType: apigw.AuthorizationType.NONE,
+        // Refresh
+        refresh.grantInvoke(new iam.ServicePrincipal('apigateway.amazonaws.com'));
+        const refreshLambdaIntegration = new apigw.LambdaIntegration(refresh);
+        api.root.addResource("refresh").addMethod("POST", refreshLambdaIntegration, {
+            authorizationType: apigw.AuthorizationType.CUSTOM,
+            authorizer: zeusAuthorizer,
             apiKeyRequired: true
         });
 

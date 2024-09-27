@@ -1,5 +1,8 @@
 {
-    "profile" : "cerberus",
+    "profile" : "hades",
     "logRetentionPeriod" : 1,
+    "accessTokenDuration" : "6h",
+    "refreshTokenDuration" : "30d",
+    "maxSessions" : 1,
     "mfaEmail" : "cerberus-security@symclouds.com"
 }
