@@ -354,7 +354,9 @@ export class Zeus extends cdk.Stack {
 
         // Create the Zeus Authorizer
         const zeusAuthorizer = new apigw.TokenAuthorizer(this, 'zeus', {
-            handler: zeus
+            authorizerName: 'zeus',
+            handler: zeus,
+            resultsCacheTtl: cdk.Duration.minutes(0)
         });
 
         // Finally we add the resources to the Lambda Functions
