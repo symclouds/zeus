@@ -73,6 +73,7 @@ export class Zeus extends cdk.Stack {
               },
             billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
             removalPolicy: RemovalPolicy.DESTROY,
+            timeToLiveAttribute: "expires"
         });
 
         // Create SES identity to send emails for multi-factor authentication
