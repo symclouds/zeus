@@ -5,29 +5,33 @@
     "zeus": "bin/zeus.js"
   },
   "scripts": {
-    "init": "npm i",
+    "init": "npm i; git clone https://github.com/symclouds/zeusBuild; git clone https://github.com/symclouds/agentBuild;",
+    "build": "mkdir assets; cp ./zeusBuild/assets/* ./assets/; cp ./agentBuild/assets/agent.zip ./assets/; rm -rf zeusBuild agentBuild; openssl genrsa -out private.pem 4096; openssl rsa -in private.pem -pubout -out public.pem; zip ./assets/login.zip private.pem; zip ./assets/refresh.zip private.pem; zip ./assets/zeus.zip public.pem; rm -rf zeusBuild public.pem private.pem",
     "deploy": "node zeusDeploy.mjs",
     "destroy": "node zeusDestroy.mjs",
-    "clean": "rm -rf node_modules cdk.out cdk.context.json public.pem private.pem",
-    "build": "tsc",
+    "clean": "rm -rf node_modules cdk.out cdk.context.json public.pem private.pem assets/",
     "watch": "tsc -w",
     "test": "jest",
     "cdk": "cdk"
   },
   "devDependencies": {
-    "@types/jest": "^29.5.12",
-    "@types/node": "^22.5.2",
-    "aws-cdk": "^2.155.0",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.10.5",
+    "aws-cdk": "^2.174.1",
     "jest": "^29.7.0",
     "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",
-    "typescript": "~5.5.4"
+    "typescript": "~5.7.3"
   },
   "dependencies": {
-    "aws-cdk-lib": "^2.155.0",
-    "constructs": "^10.3.0",
+    "@aws-sdk/client-lambda": "^3.723.0",
+    "aws-cdk-lib": "^2.174.1",
+    "constructs": "^10.4.2",
+    "crypto-js": "^4.2.0",
     "jsonwebtoken": "^9.0.2",
     "qrcode-terminal": "^0.12.0",
-    "source-map-support": "^0.5.21"
+    "source-map-support": "^0.5.21",
+    "uuid": "^11.0.4",
+    "uuidv4": "^6.2.13"
   }
 }

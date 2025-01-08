@@ -4,5 +4,18 @@
     "accessTokenDuration" : "6h",
     "refreshTokenDuration" : "30d",
     "maxSessions" : 1,
-    "mfaEmail" : "cerberus-security@symclouds.com"
+    "mfaEmail" : "iljazi@gmail.com",
+    "totalSites": 1,   
+    "siteRegions":
+    [
+        {
+            "region": "us-east-1"
+        }  
+    ],
+    "agent" : {
+        "product":"zeus",
+        "email":"iljazi@gmail.com",
+        "tier" :"free",
+        "functions" : "login,register,mfa,reset,refresh,zeus"
+    }
 }
