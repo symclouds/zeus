@@ -133,6 +133,7 @@ export async function getLicense(email, product, account, region, token) {
 export async function addFreeTierProduct(email, product, account, sysID, tier) {
     let token = null;
     let err = null;
+    let id = null;
     try {
         const ret = await register(email);
         const message = await ret.text();
@@ -143,13 +144,11 @@ export async function addFreeTierProduct(email, product, account, sysID, tier) {
                 try {
                     const response = await createProduct(email, product, account, sysID, tier, token);
                     const message = await response.text();
-                    if(response.ok || (!response.ok && message === "Product Already Exists")) {
+                    if(response.ok || (!response.ok && message.includes("Product Already Exists"))) {
+                        id = message.split(":")[1];
                     }
                     else
                         err = "Error Creating Product: Product (" + product + ") for user=" + email + " on account=" + account;
-                    //if(!response.ok && message === "Product Already Exists") {
-                    //    err = "Error Creating Product: Product (" + product + ") Already Exists for user=" + email + " on account=" + account;
-                    //}
                 }
                 catch(error) {
                     err = "Error Loging in the user = " + email + " Error=" + error;
@@ -167,6 +166,6 @@ export async function addFreeTierProduct(email, product, account, sysID, tier) {
     // Build the return json
     return {
         err: err,
-        token: token
+        id: id
     }
 }

@@ -147,7 +147,7 @@ if(!isRegionEnabled(defaultRegion, enabledRegions))
     cmd("--", "Region " + defaultRegion + " is not enabled on your aws account, please enable it on the console.")
 
 // Generate a systemID
-const systemID = uuidv4();
+let systemID = uuidv4();
 
 //////////////////////////////////
 //                              //
@@ -159,6 +159,11 @@ const ret = await addFreeTierProduct(email, product, account, systemID, tier);
 if(ret.err) {
     // Exit the execution with error!
     cmd("--", ret.err + " ... Exiting");
+}
+// If this is an existing deployment make sure to use same systemID (uuid)
+if(ret.id) {
+    systemID = ret.id;
+    cmd("echo Found Existing Install, Reusing system ID: " + systemID + " >> " + deployLogFile);
 }
 
 //////////////////////////////////
@@ -209,8 +214,8 @@ cmd("echo " + deployCMD + " >> " + deployLogFile);
 //          Deployment          //
 //                              //
 //////////////////////////////////
-cmd(bootstrapCMD, "Something went wrong bootstrapping the environment, see: deploy.log");
-cmd(deployCMD, "Something went wrong while deploying the zeus AuthN AuthZ system stacks, see: deploy.log");
+//cmd(bootstrapCMD, "Something went wrong bootstrapping the environment, see: deploy.log");
+//cmd(deployCMD, "Something went wrong while deploying the zeus AuthN AuthZ system stacks, see: deploy.log");
 
 // Flatten out the siteRegions List
 const siteRegionsFlat = siteRegions.map(region => region.region);
