@@ -134,7 +134,8 @@ export class ZeusSite extends cdk.Stack {
                 timeout: cdk.Duration.seconds(15),
                 handler: "index.handler",
                 environment: {
-                    systemID: systemID
+                    systemID: systemID,
+                    sessions: maxSessions.toString()
                 },
                 memorySize: 128,
                 role: logoutRole
