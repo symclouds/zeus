@@ -1,4 +1,4 @@
-import { readFile } from "fs/promises";
+import { readFile, writeFile } from "fs/promises";
 import { execSync } from "node:child_process";
 
 //////////////////////////////////
@@ -10,6 +10,7 @@ import { execSync } from "node:child_process";
 export default function siteDestroy () {}
 
 // Configuration Filenames and Lognames
+const cdkContextFilename = 'cdk.context.json';
 const zeusConfigFilename = 'zeus.json';
 const destroyLogFile = "destroy.log";
 cmd("echo > " + destroyLogFile);
@@ -43,6 +44,13 @@ function cmd(command, errReason) {
 // Check System dependencies, there may be others that are required
 cmd('which aws', "aws cli is not installed on this host but required, exiting");
 cmd('which cdk', "aws cdk is not installed on this host but required, exiting");
+
+// Write CDK Context Object to filesystem
+//await writeFile('./' + cdkContextFilename, JSON.stringify(context, null, 2), (error) => {
+//    if (error) {
+//        cmd("--", "An error occured saving the CDK Context: " + error); 
+//    }
+//});
 
 // Start the destruction process
 console.log("Update:");

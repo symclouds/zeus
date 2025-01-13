@@ -51,6 +51,7 @@ const tier = app.node.tryGetContext('tier');
 const functions = app.node.tryGetContext('functions');
 const chksums = app.node.tryGetContext('chksums');
 
+
 // Create the Databases for Zeus Authentication/Authorization System
 const db = new ZeusDatabase(app, "ZeusDatabase", {});
 db.createDatabase(totalSites, siteRegions);
@@ -100,6 +101,8 @@ for(let itr = 0; itr < siteRegionsFlat.length; itr++) {
     tier: tier,
     email: email,
     product: product,
+    region: siteRegionsFlat[itr],
+    account: account,
     systemID: systemID,
     functions: functions,
     chksums: chksums

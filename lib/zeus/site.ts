@@ -6,6 +6,7 @@ import * as apigw from 'aws-cdk-lib/aws-apigateway';
 import * as logs from 'aws-cdk-lib/aws-logs'
 import * as ses from 'aws-cdk-lib/aws-ses';
 import SHA256 from 'crypto-js/sha256.js';
+import AES from 'crypto-js/aes.js';
 
 // Helper function Generate API Key of Length (keyLength)
 function apiKeyGen(keyLength : any) {
@@ -16,6 +17,15 @@ function apiKeyGen(keyLength : any) {
   }
   return key;
 }
+
+function generateTempLease(region : string, accountID : string, systemID : string, functionName : string) {
+    const leaseDuration = 3600;
+    const leaseString = `${region}:${accountID}:${systemID}:${leaseDuration}:${functionName}`;
+    const password = SHA256(`${region}:${accountID}:${systemID}:${functionName}`).toString();
+    const encryptedLease = AES.encrypt(leaseString, password).toString();
+    const base64Lease = Buffer.from(encryptedLease).toString('base64');
+    return base64Lease;
+  }
 
 // Helper function Generate Deterministic API Key of Length (keyLength)
 function apiKeyGenDeterministic(systemID : string, region : string, account : string, product : string, apiKeyName : string) {
@@ -118,6 +128,7 @@ export class ZeusSite extends cdk.Stack {
             const loginFxName = 'login';
             const loginAsset = './assets/login.zip';
             const loginRole = cdk.aws_iam.Role.fromRoleName(this, 'loginRole', 'loginRole');
+            const loginTempLease = generateTempLease(region, account, systemID, loginFxName);
             const login = new lambda.Function(this, "loginLambda", {
                 functionName: loginFxName,
                 runtime: lambda.Runtime.NODEJS_LATEST,
@@ -129,7 +140,8 @@ export class ZeusSite extends cdk.Stack {
                     accessD: accessTokenDuration,
                     refreshD: refreshTokenDuration,
                     sessions: maxSessions.toString(),
-                    systemID: systemID
+                    systemID: systemID,
+                    lease: loginTempLease
                 },
                 memorySize: 128,
                 role: loginRole
@@ -140,6 +152,7 @@ export class ZeusSite extends cdk.Stack {
             const registerFxName = 'register';
             const registerAsset = './assets/register.zip';
             const registerRole = cdk.aws_iam.Role.fromRoleName(this, 'registerRole', 'registerRole');
+            const registerTempLease = generateTempLease(region, account, systemID, registerFxName);
             const register = new lambda.Function(this, "registerLambda", {
                 functionName: registerFxName,
                 runtime: lambda.Runtime.NODEJS_LATEST,
@@ -148,7 +161,8 @@ export class ZeusSite extends cdk.Stack {
                 handler: "index.handler",
                 description: chksums[registerAsset].toString(),
                 environment: {
-                    systemID: systemID
+                    systemID: systemID,
+                    lease: registerTempLease
                 },
                 memorySize: 128,
                 role: registerRole
@@ -159,6 +173,7 @@ export class ZeusSite extends cdk.Stack {
             const mfaFxName = 'mfa';
             const mfaAsset = './assets/mfa.zip';
             const mfaRole = cdk.aws_iam.Role.fromRoleName(this, 'mfaRole', 'mfaRole');
+            const mfaTempLease = generateTempLease(region, account, systemID, mfaFxName);
             const mfa = new lambda.Function(this, "mfaLambda", {
                 functionName: mfaFxName,
                 runtime: lambda.Runtime.NODEJS_LATEST,
@@ -168,14 +183,15 @@ export class ZeusSite extends cdk.Stack {
                 description: chksums[mfaAsset].toString(),
                 environment: {
                     identity: mfaEmail,
-                    systemID: systemID
+                    systemID: systemID,
+                    lease: mfaTempLease
                 },
                 memorySize: 128,
                 role: mfaRole
             });
             createLogGroup(this, mfaFxName, logRetentionPeriod, stackName);
 
-            // Logout
+            // Logout : needs no lease
             const logoutFxName = 'logout';
             const logoutAsset = './assets/logout.zip';
             const logoutRole = cdk.aws_iam.Role.fromRoleName(this, 'logoutRole', 'logoutRole');
@@ -199,6 +215,7 @@ export class ZeusSite extends cdk.Stack {
             const resetFxName = 'reset';
             const resetAsset = './assets/reset.zip';
             const resetRole = cdk.aws_iam.Role.fromRoleName(this, 'resetRole', 'resetRole');
+            const resetTempLease = generateTempLease(region, account, systemID, resetFxName);
             const reset = new lambda.Function(this, "resetLambda", {
                 functionName: resetFxName,
                 runtime: lambda.Runtime.NODEJS_LATEST,
@@ -207,7 +224,8 @@ export class ZeusSite extends cdk.Stack {
                 handler: "index.handler",
                 description: chksums[resetAsset].toString(),
                 environment: {
-                    systemID: systemID
+                    systemID: systemID,
+                    resetTempLease
                 },
                 memorySize: 128,
                 role: resetRole
@@ -218,6 +236,7 @@ export class ZeusSite extends cdk.Stack {
             const refreshFxName = 'refresh';
             const refreshAsset = './assets/refresh.zip';
             const refreshRole = cdk.aws_iam.Role.fromRoleName(this, 'refreshRole', 'refreshRole');
+            const refreshTempLease = generateTempLease(region, account, systemID, refreshFxName);
             const refresh = new lambda.Function(this, "refreshLambda", {
                 functionName: refreshFxName,
                 runtime: lambda.Runtime.NODEJS_LATEST,
@@ -229,7 +248,8 @@ export class ZeusSite extends cdk.Stack {
                     accessD: accessTokenDuration,
                     refreshD: refreshTokenDuration,
                     sessions: maxSessions.toString(),
-                    systemID: systemID
+                    systemID: systemID,
+                    lease: refreshTempLease
                 },
                 memorySize: 128,
                 role: refreshRole
@@ -240,6 +260,7 @@ export class ZeusSite extends cdk.Stack {
             const zeusFxName = 'zeus';
             const zeusAsset = './assets/zeus.zip';
             const zeusRole = cdk.aws_iam.Role.fromRoleName(this, 'zeusRole', 'zeusRole');
+            const zeusTempLease = generateTempLease(region, account, systemID, zeusFxName);
             const zeus = new lambda.Function(this, "zeusLambda", {
                 functionName: zeusFxName,
                 runtime: lambda.Runtime.NODEJS_LATEST,
@@ -248,7 +269,8 @@ export class ZeusSite extends cdk.Stack {
                 handler: "index.handler",
                 description: chksums[zeusAsset].toString(),
                 environment: {
-                    systemID: systemID
+                    systemID: systemID,
+                    lease: zeusTempLease
                 },
                 memorySize: 128,
                 role: zeusRole

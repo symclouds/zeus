@@ -2,6 +2,8 @@ import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as logs from 'aws-cdk-lib/aws-logs'
+import AES from 'crypto-js/aes.js';
+import SHA256 from 'crypto-js/sha256.js';
 
 function createLogGroup(scope: Construct, fx: string, 
   logRetention: any, stackName: string) {
@@ -20,9 +22,12 @@ interface LambdaProps extends cdk.StackProps {
   tier?: string,
   email?: string,
   product?: string,
+  region?: string,
+  account?: string;
   systemID?: string,
   functions?: string,
   chksums?: any;
+
 }
 
 // Hades Agent Site Class creates Agent Lambda, Lambda Role and Schedule in given region
@@ -33,16 +38,21 @@ export class AgentSite extends cdk.Stack {
     var tier: string;
     var email: string;
     var product: string;
+    var region: string;
+    var account: string;
     var systemID: string;
     var functions: string;
     var chksums: any;
 
     // Bucket Names, ARNs and Regions Required to proceed
-    if(props && props.logRetentionPeriod && props.tier && props.email && props.product && props.systemID && props.functions && props.chksums) {    
+    if(props && props.logRetentionPeriod && props.tier && props.email && props.product 
+      && props.region && props.account && props.systemID && props.functions && props.chksums) {    
         logRetentionPeriod = props.logRetentionPeriod;
         tier = props.tier;
         email = props.email;
         product = props.product;
+        region = props.region;
+        account = props.account;
         systemID = props.systemID;
         functions = props.functions;
         chksums = props.chksums;
@@ -50,9 +60,6 @@ export class AgentSite extends cdk.Stack {
         // Policy will be created in X Regions so it must be unique in the Stack
         const stackName = cdk.Stack.of(this).stackName;
 
-        // Get the Region Value to get the corresponding role for this region
-        const region = cdk.Stack.of(this).region;
-        
         // Create Agent Function Lambda (e.g. hades-agent)
         const agentRoleName = product + "-agent-role-";
         const scheduleRoleName = product + "-scheduler-role-";
