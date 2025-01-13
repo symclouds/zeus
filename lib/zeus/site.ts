@@ -225,7 +225,7 @@ export class ZeusSite extends cdk.Stack {
                 description: chksums[resetAsset].toString(),
                 environment: {
                     systemID: systemID,
-                    resetTempLease
+                    lease: resetTempLease
                 },
                 memorySize: 128,
                 role: resetRole

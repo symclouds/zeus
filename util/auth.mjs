@@ -7,8 +7,8 @@ const APP         = 'themis';
 const MAGIC       = "0a0bf5e9e7b3151db6a85451d471de72c8ea577b91d316d4ff33d37535c223b2";
 const themis_URL  = 'https://iuuvobk4sh.execute-api.us-east-1.amazonaws.com/themis/';
 const themis_KEY  = 'kvUvg2NTAs7nM6FV7Jhvs4QBAq0SxRY119huQRTy';
-const zeus_URL    = 'https://wmv7re12ij.execute-api.us-east-1.amazonaws.com/zeus/';
-const zeus_KEY    = 'MmFkMzc0MGZhNjA5NmQ2YzRiZmFjMDFiOTFlNzdjNGYzZTc3ZmRiOGExYzk1ZDM5MmNlOGUxMWFhNDE1MWFiYw22';
+const zeus_URL   = 'https://ziznafpyve.execute-api.us-east-1.amazonaws.com/zeus/';
+const zeus_KEY   = 'OWVmMjU2Y2M0ODA2NGY3Yzk5ZDM0NjgyNWE4ZGEyZmY4MTg0NzVmMWE5OTY3OTdiNzU2ZTFmNjUwN2JkZmU0Mw22';
 
 // Register the agent user with Themis
 export async function register (email)  {

@@ -268,8 +268,8 @@ cmd("echo " + deployCMD + " >> " + deployLogFile);
 //          Deployment          //
 //                              //
 //////////////////////////////////
-//cmd(bootstrapCMD, "Something went wrong bootstrapping the environment, see: deploy.log");
-//cmd(deployCMD, "Something went wrong while deploying the zeus AuthN AuthZ system stacks, see: deploy.log");
+cmd(bootstrapCMD, "Something went wrong bootstrapping the environment, see: deploy.log");
+cmd(deployCMD, "Something went wrong while deploying the zeus AuthN AuthZ system stacks, see: deploy.log");
 
 //////////////////////////////////
 //                              //
