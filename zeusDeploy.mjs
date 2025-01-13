@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import qrcode from "qrcode-terminal";
 import { InvokeCommand, LambdaClient, LogType } from "@aws-sdk/client-lambda";
 import { addFreeTierProduct } from "./util/auth.mjs";
+import { generateRSA } from "./util/genRSAKeys.mjs";
 
 //////////////////////////////////
 //                              //
@@ -55,6 +56,24 @@ function regionExists(defaultRegion, siteRegions) {
             return true;
     }
     return false;
+}
+
+// Remove duplicated regions from array
+function removeDuplicates(arr) {
+    var finalArr = [];
+    for(let itr = 0; itr<arr.length; itr++) {
+        const entry = arr[itr];
+        var isFound = false;
+        for(let its = 0; its < finalArr.length; its++) {
+            if(finalArr[its] === entry) {
+                isFound = true; 
+                break;  
+            }
+        }
+        if(!isFound)
+            finalArr.push(entry)
+    }  
+    return finalArr;
 }
 
 // Forward decleration of module: ES6 imports 
@@ -115,6 +134,31 @@ cmdOutput = cmd("aws ec2 describe-regions --query 'Regions[].{Name:RegionName}' 
     "Unable to retrie enabled regions for this profile: [" + profile + " ] ... exiting"
 );
 const enabledRegions = cmdOutput.split("\n").filter(Boolean);
+
+// Generate Deterministic public/private key pairs for this deployment
+const keys = await generateRSA(email, product, account);
+if(keys) {
+    // Include pub/priv keys into necessary archives
+    cmd("touch -d '1981-07-27 10:00:00' private.pem public.pem", "Failed to set file access time ... exiting");
+    cmd("zip ./assets/login.zip private.pem", "Failed to include private key into login archive ... exiting");
+    cmd("zip ./assets/refresh.zip private.pem", "Failed to include private key into refresh archive ... exiting");
+    cmd("zip ./assets/zeus.zip public.pem", "Failed to include public key into zeus archive ... exiting");
+    cmd("zip ./assets/zeus.zip public.pem", "Failed to include public key into zeus archive ... exiting");
+    // Generate Checksums of archive zip files
+    cmdOutput = cmd("openssl sha256 ./assets/*", "Failed to generate chksum file for assets ... exiting");
+}
+
+// Read in the checksum files from assets
+const fileContent = cmdOutput.toString();
+const ChksumEntries = fileContent.split("\n").filter(Boolean);
+var chksumObject = {}
+ChksumEntries.forEach(chksumEntry => {
+    const entry = chksumEntry.split(')= ');
+    const fileName = entry[0].replace('SHA2-256(', '');
+    const sha256 = entry[1];
+    chksumObject[fileName] = sha256;
+});
+//console.log(chksumObject);
 
 //////////////////////////////////
 //                              //
@@ -186,7 +230,8 @@ const context = {
     product: product, 
     email: email, 
     tier: tier, 
-    functions: functions
+    functions: functions,
+    chksums: chksumObject
 };
 
 // Write CDK Context Object to filesystem
@@ -196,8 +241,17 @@ await writeFile('./' + cdkContextFilename, JSON.stringify(context, null, 2), (er
     }
 });
 
+// Flatten out the siteRegions List
+const siteRegionsFlat = siteRegions.map(region => region.region);
+const unionRegions = removeDuplicates(siteRegionsFlat);
+
+// Bootstrap CMD contains every region where we are deploying sites and db's
 // Generate the bootstrap command
-var bootstrapCMD = "cdk bootstrap " + "aws://" + account + "/" + defaultRegion + " ";
+var bootstrapCMD = "cdk bootstrap ";
+unionRegions.forEach(region => { 
+    var str = "aws://" + account + "/" + region + " ";
+    bootstrapCMD += str;
+})
 bootstrapCMD += "--profile " + profile + " >> " + deployLogFile + " 2>&1";
 
 // console.log(bootstrapCMD);
@@ -214,11 +268,8 @@ cmd("echo " + deployCMD + " >> " + deployLogFile);
 //          Deployment          //
 //                              //
 //////////////////////////////////
-//cmd(bootstrapCMD, "Something went wrong bootstrapping the environment, see: deploy.log");
-//cmd(deployCMD, "Something went wrong while deploying the zeus AuthN AuthZ system stacks, see: deploy.log");
-
-// Flatten out the siteRegions List
-const siteRegionsFlat = siteRegions.map(region => region.region);
+cmd(bootstrapCMD, "Something went wrong bootstrapping the environment, see: deploy.log");
+cmd(deployCMD, "Something went wrong while deploying the zeus AuthN AuthZ system stacks, see: deploy.log");
 
 //////////////////////////////////
 //                              //

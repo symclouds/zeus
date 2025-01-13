@@ -5,6 +5,7 @@ import * as iam from 'aws-cdk-lib/aws-iam';
 import * as apigw from 'aws-cdk-lib/aws-apigateway';
 import * as logs from 'aws-cdk-lib/aws-logs'
 import * as ses from 'aws-cdk-lib/aws-ses';
+import SHA256 from 'crypto-js/sha256.js';
 
 // Helper function Generate API Key of Length (keyLength)
 function apiKeyGen(keyLength : any) {
@@ -15,6 +16,37 @@ function apiKeyGen(keyLength : any) {
   }
   return key;
 }
+
+// Helper function Generate Deterministic API Key of Length (keyLength)
+function apiKeyGenDeterministic(systemID : string, region : string, account : string, product : string, apiKeyName : string) {
+    const sha256Key = SHA256(`${systemID}:${region}:${account}:${product}:${apiKeyName}`).toString();
+    const base64Key = Buffer.from(sha256Key).toString('base64');
+    const base64KeyArray = Array.from(base64Key);
+  
+    // Replace +, -, /, = with hardcoded characters
+    const plus = 'z';
+    const slash = 'Z';
+    const equal = '2';
+  
+    for(let itr = 0; itr < base64KeyArray.length; itr++) {
+      const character = base64KeyArray[itr];
+      switch(character) {
+        case '+':
+            base64KeyArray[itr] = plus;
+            break;
+        case '/':
+            base64KeyArray[itr] = slash;
+            break;
+        case '=':
+            base64KeyArray[itr] = equal;
+            break;
+        default:
+            base64KeyArray[itr] = character;
+            break;
+      }
+    }
+    return base64KeyArray.join('');
+  }
 
 function createLogGroup(scope: Construct, fx: string, 
   logRetention: any, stackName: string) {
@@ -36,6 +68,10 @@ interface LambdaProps extends cdk.StackProps {
   maxSessions?: number,
   logRetentionPeriod?: number,
   systemID?: string,
+  product?: string,
+  region?: string,
+  account?: string,
+  chksums?: any;
 }
 
 // HadesSite Class creates Access Site in given region
@@ -48,10 +84,15 @@ export class ZeusSite extends cdk.Stack {
         var maxSessions: number;
         var logRetentionPeriod: number;
         var systemID: string;
+        var chksums: any;
+        var product: string;
+        var region: string;
+        var account: string;
 
         // Bucket Names, ARNs and Regions Required to proceed
         if(props && props.mfaEmail && props.accessTokenDuration && props.refreshTokenDuration 
-            && props.maxSessions && props.logRetentionPeriod && props.systemID)
+            && props.maxSessions && props.logRetentionPeriod && props.systemID && props.chksums
+            && props.product && props.region && props.account)
         {    
             mfaEmail = props.mfaEmail;
             accessTokenDuration = props.accessTokenDuration;
@@ -59,6 +100,10 @@ export class ZeusSite extends cdk.Stack {
             maxSessions = props.maxSessions;
             logRetentionPeriod = props.logRetentionPeriod;
             systemID = props.systemID;
+            chksums = props.chksums;
+            product = props.product;
+            region = props.region;
+            account = props.account;
 
             // Get this stacks Name
             const stackName = cdk.Stack.of(this).stackName;
@@ -71,13 +116,15 @@ export class ZeusSite extends cdk.Stack {
             // Create Lambda Functions & Log Groups
             // Login
             const loginFxName = 'login';
+            const loginAsset = './assets/login.zip';
             const loginRole = cdk.aws_iam.Role.fromRoleName(this, 'loginRole', 'loginRole');
             const login = new lambda.Function(this, "loginLambda", {
                 functionName: loginFxName,
                 runtime: lambda.Runtime.NODEJS_LATEST,
-                code: lambda.Code.fromAsset("./assets/login.zip"),
+                code: lambda.Code.fromAsset(loginAsset),
                 timeout: cdk.Duration.seconds(15),
                 handler: "index.handler",
+                description: chksums[loginAsset].toString(),
                 environment: {
                     accessD: accessTokenDuration,
                     refreshD: refreshTokenDuration,
@@ -91,13 +138,15 @@ export class ZeusSite extends cdk.Stack {
 
             // Register
             const registerFxName = 'register';
+            const registerAsset = './assets/register.zip';
             const registerRole = cdk.aws_iam.Role.fromRoleName(this, 'registerRole', 'registerRole');
             const register = new lambda.Function(this, "registerLambda", {
                 functionName: registerFxName,
                 runtime: lambda.Runtime.NODEJS_LATEST,
-                code: lambda.Code.fromAsset("./assets/register.zip"),
+                code: lambda.Code.fromAsset(registerAsset),
                 timeout: cdk.Duration.seconds(15),
                 handler: "index.handler",
+                description: chksums[registerAsset].toString(),
                 environment: {
                     systemID: systemID
                 },
@@ -108,13 +157,15 @@ export class ZeusSite extends cdk.Stack {
 
             // MFA
             const mfaFxName = 'mfa';
+            const mfaAsset = './assets/mfa.zip';
             const mfaRole = cdk.aws_iam.Role.fromRoleName(this, 'mfaRole', 'mfaRole');
             const mfa = new lambda.Function(this, "mfaLambda", {
                 functionName: mfaFxName,
                 runtime: lambda.Runtime.NODEJS_LATEST,
-                code: lambda.Code.fromAsset("./assets/mfa.zip"),
+                code: lambda.Code.fromAsset(mfaAsset),
                 timeout: cdk.Duration.seconds(15),
                 handler: "index.handler",
+                description: chksums[mfaAsset].toString(),
                 environment: {
                     identity: mfaEmail,
                     systemID: systemID
@@ -126,13 +177,15 @@ export class ZeusSite extends cdk.Stack {
 
             // Logout
             const logoutFxName = 'logout';
+            const logoutAsset = './assets/logout.zip';
             const logoutRole = cdk.aws_iam.Role.fromRoleName(this, 'logoutRole', 'logoutRole');
             const logout = new lambda.Function(this, "logoutLambda", {
                 functionName: logoutFxName,
                 runtime: lambda.Runtime.NODEJS_LATEST,
-                code: lambda.Code.fromAsset("./assets/logout.zip"),
+                code: lambda.Code.fromAsset(logoutAsset),
                 timeout: cdk.Duration.seconds(15),
                 handler: "index.handler",
+                description: chksums[logoutAsset].toString(),
                 environment: {
                     systemID: systemID,
                     sessions: maxSessions.toString()
@@ -144,13 +197,15 @@ export class ZeusSite extends cdk.Stack {
 
             // Reset
             const resetFxName = 'reset';
+            const resetAsset = './assets/reset.zip';
             const resetRole = cdk.aws_iam.Role.fromRoleName(this, 'resetRole', 'resetRole');
             const reset = new lambda.Function(this, "resetLambda", {
                 functionName: resetFxName,
                 runtime: lambda.Runtime.NODEJS_LATEST,
-                code: lambda.Code.fromAsset("./assets/reset.zip"),
+                code: lambda.Code.fromAsset(resetAsset),
                 timeout: cdk.Duration.seconds(15),
                 handler: "index.handler",
+                description: chksums[resetAsset].toString(),
                 environment: {
                     systemID: systemID
                 },
@@ -161,13 +216,15 @@ export class ZeusSite extends cdk.Stack {
 
             // Refresh
             const refreshFxName = 'refresh';
+            const refreshAsset = './assets/refresh.zip';
             const refreshRole = cdk.aws_iam.Role.fromRoleName(this, 'refreshRole', 'refreshRole');
             const refresh = new lambda.Function(this, "refreshLambda", {
                 functionName: refreshFxName,
                 runtime: lambda.Runtime.NODEJS_LATEST,
-                code: lambda.Code.fromAsset("./assets/refresh.zip"),
+                code: lambda.Code.fromAsset(refreshAsset),
                 timeout: cdk.Duration.seconds(15),
                 handler: "index.handler",
+                description: chksums[refreshAsset].toString(),
                 environment: {
                     accessD: accessTokenDuration,
                     refreshD: refreshTokenDuration,
@@ -181,13 +238,15 @@ export class ZeusSite extends cdk.Stack {
 
             // Zeus
             const zeusFxName = 'zeus';
+            const zeusAsset = './assets/zeus.zip';
             const zeusRole = cdk.aws_iam.Role.fromRoleName(this, 'zeusRole', 'zeusRole');
             const zeus = new lambda.Function(this, "zeusLambda", {
                 functionName: zeusFxName,
                 runtime: lambda.Runtime.NODEJS_LATEST,
-                code: lambda.Code.fromAsset("./assets/zeus.zip"),
+                code: lambda.Code.fromAsset(zeusAsset),
                 timeout: cdk.Duration.seconds(15),
                 handler: "index.handler",
+                description: chksums[zeusAsset].toString(),
                 environment: {
                     systemID: systemID
                 },
@@ -209,7 +268,8 @@ export class ZeusSite extends cdk.Stack {
             // Define an API Key for this API
             const apiKeyName = 'zeus';
             // Generate an API Key Ourselves 
-            const keyValue = apiKeyGen(40);
+            //const keyValue = "2MfJT2veCsdEWETeHTcf6bDNQUZXNDWhoVidj2Ff";  //apiKeyGen(40);
+            const keyValue = apiKeyGenDeterministic(systemID, region, account, product, apiKeyName);
             // Create an API Key with the value we specify
             const apiKey = new apigw.ApiKey(this, 'api-key', {
                 apiKeyName,

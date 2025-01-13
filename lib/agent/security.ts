@@ -21,7 +21,7 @@ export class AgentSecurity extends cdk.Stack {
         let suffix = 0;
 
         regions.forEach(region => {
-            const agentRole = new iam.Role(this, 'HadesAgentRole'+suffix, {
+            const agentRole = new iam.Role(this, product+'AgentRole'+suffix, {
                 roleName: roleName + region,
                 assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),   // required
                 managedPolicies: [ 

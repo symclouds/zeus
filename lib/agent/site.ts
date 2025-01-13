@@ -21,7 +21,8 @@ interface LambdaProps extends cdk.StackProps {
   email?: string,
   product?: string,
   systemID?: string,
-  functions?: string
+  functions?: string,
+  chksums?: any;
 }
 
 // Hades Agent Site Class creates Agent Lambda, Lambda Role and Schedule in given region
@@ -34,15 +35,17 @@ export class AgentSite extends cdk.Stack {
     var product: string;
     var systemID: string;
     var functions: string;
+    var chksums: any;
 
     // Bucket Names, ARNs and Regions Required to proceed
-    if(props && props.logRetentionPeriod && props.tier && props.email && props.product && props.systemID && props.functions) {    
+    if(props && props.logRetentionPeriod && props.tier && props.email && props.product && props.systemID && props.functions && props.chksums) {    
         logRetentionPeriod = props.logRetentionPeriod;
         tier = props.tier;
         email = props.email;
         product = props.product;
         systemID = props.systemID;
         functions = props.functions;
+        chksums = props.chksums;
 
         // Policy will be created in X Regions so it must be unique in the Stack
         const stackName = cdk.Stack.of(this).stackName;
@@ -53,16 +56,18 @@ export class AgentSite extends cdk.Stack {
         // Create Agent Function Lambda (e.g. hades-agent)
         const agentRoleName = product + "-agent-role-";
         const scheduleRoleName = product + "-scheduler-role-";
-        const agentFunctionName = product + '-agent';
+        const agentFunctionName = product + "-agent";
+        const agentAsset = "./assets/agent.zip";
 
         // Define the Agent Lambda Function and attach the previously configured role to it
-        const agentRole = cdk.aws_iam.Role.fromRoleName(this, 'HadesAgentRole', agentRoleName+region);
-        const agentFunction = new lambda.Function(this, "HadesAgentFunction", {
+        const agentRole = cdk.aws_iam.Role.fromRoleName(this, product + 'AgentRole', agentRoleName+region);
+        const agentFunction = new lambda.Function(this, product + "AgentFunction", {
             functionName: agentFunctionName,
             runtime: lambda.Runtime.NODEJS_20_X,
-            code: lambda.Code.fromAsset("./assets/agent.zip"),
+            code: lambda.Code.fromAsset(agentAsset),
             timeout: cdk.Duration.seconds(15),
             handler: "index.handler",
+            description: chksums[agentAsset].toString(),
             environment: {
                 product: product,
                 email: email,

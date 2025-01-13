@@ -10,7 +10,7 @@ export class ZeusDatabase extends cdk.Stack {
     }
   
     createDatabase(totalSites : any, siteRegions : Array<any>) {
-        if(totalSites > 1) {
+        //if(totalSites > 1) {
             // Create DynamoDB Tables
             const users = new dynamodb.CfnGlobalTable(this, "usersTable", {
                 tableName: "users",
@@ -57,6 +57,7 @@ export class ZeusDatabase extends cdk.Stack {
                     attributeName: "expires"
                 }
             });
+            /*
         }
         else {
             const usersTable = new dynamodb.Table(this, "usersTable", {
@@ -84,5 +85,6 @@ export class ZeusDatabase extends cdk.Stack {
                 timeToLiveAttribute: "expires"
             });    
         }
+            */
     }
 }

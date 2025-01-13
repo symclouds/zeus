@@ -1,13 +1,7 @@
 #!/usr/bin/env node
 import 'source-map-support/register';
 import * as cdk from 'aws-cdk-lib';
-import * as iam from 'aws-cdk-lib/aws-iam';
-import * as dynamodb from "aws-cdk-lib/aws-dynamodb";
-import * as ses from 'aws-cdk-lib/aws-ses';
-import * as lambda from "aws-cdk-lib/aws-lambda";
-import * as apigw from 'aws-cdk-lib/aws-apigateway';
 import { Construct } from 'constructs';
-import { RemovalPolicy } from 'aws-cdk-lib'
 import * as logs from 'aws-cdk-lib/aws-logs'
 import { ZeusDatabase } from '../lib/zeus/storage';
 import { ZeusSecurity } from '../lib/zeus/security';
@@ -55,6 +49,7 @@ const product = app.node.tryGetContext('product');
 const email = app.node.tryGetContext('email');
 const tier = app.node.tryGetContext('tier');
 const functions = app.node.tryGetContext('functions');
+const chksums = app.node.tryGetContext('chksums');
 
 // Create the Databases for Zeus Authentication/Authorization System
 const db = new ZeusDatabase(app, "ZeusDatabase", {});
@@ -64,11 +59,10 @@ db.createDatabase(totalSites, siteRegions);
 let security = new ZeusSecurity(app, "ZeusSecurity", {});
 security.createSecurity(mfaEmail, account, siteRegions);
 
-
+// Flatten out the regions list: e.g. [ "us-east-1", "us-east-2", "us-west-1" ]
 const siteRegionsFlat = siteRegions.map((region:any) => region.region);
 
-
-// Create Hades Access Sites specified in the hades.json configuration 
+// Create Zeus Access Sites specified in the hades.json configuration 
 // Creates copies to different regions
 for(let itr = 0; itr < siteRegionsFlat.length; itr++) {
     const StackSuffix = itr+1;
@@ -82,7 +76,11 @@ for(let itr = 0; itr < siteRegionsFlat.length; itr++) {
       refreshTokenDuration: refreshTokenDuration,
       maxSessions: maxSessions,
       logRetentionPeriod: logRetentionPeriod,
-      systemID: systemID
+      systemID: systemID,
+      chksums: chksums,
+      product: product,
+      region: siteRegionsFlat[itr],
+      account: account
     });
     site.addDependency(security);
 }
@@ -91,6 +89,7 @@ for(let itr = 0; itr < siteRegionsFlat.length; itr++) {
 let agentSecurity = new AgentSecurity(app, "AgentSecurity", {})
 agentSecurity.createSecurity(product, functions, siteRegionsFlat);
 
+// Create the Zeus Agent Site at each region
 for(let itr = 0; itr < siteRegionsFlat.length; itr++) {
   const StackSuffix = itr+1;
   const agentSite = new AgentSite(app, "ZeusAgentSite" + StackSuffix, {
@@ -102,7 +101,8 @@ for(let itr = 0; itr < siteRegionsFlat.length; itr++) {
     email: email,
     product: product,
     systemID: systemID,
-    functions: functions
+    functions: functions,
+    chksums: chksums
   });
   agentSite.addDependency(agentSecurity);
 }
