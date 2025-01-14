@@ -65,6 +65,7 @@ export class AgentSite extends cdk.Stack {
         const scheduleRoleName = product + "-scheduler-role-";
         const agentFunctionName = product + "-agent";
         const agentAsset = "./assets/agent.zip";
+        const schedulerName = product + "-agent-cron-schedule"
 
         // Define the Agent Lambda Function and attach the previously configured role to it
         const agentRole = cdk.aws_iam.Role.fromRoleName(this, product + 'AgentRole', agentRoleName+region);
@@ -94,7 +95,7 @@ export class AgentSite extends cdk.Stack {
         const agentScheduler = new cdk.CfnResource(this, "agentSchedulerEvent", {
             type: "AWS::Scheduler::Schedule",
             properties: {
-                Name: "agentCronSchedule",
+                Name: schedulerName,
                 Description: "Runs the agent cron every ~ 8 hours, ~ 3 times a day.",
                 // Flexible within 3 hours of every 8 hours, helps stagger the requests coming into Themis
                 // Helps ensure that all agent calls dont come in all at once across the field into Themis

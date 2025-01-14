@@ -144,21 +144,21 @@ if(keys) {
     cmd("zip ./assets/refresh.zip private.pem", "Failed to include private key into refresh archive ... exiting");
     cmd("zip ./assets/zeus.zip public.pem", "Failed to include public key into zeus archive ... exiting");
     cmd("zip ./assets/zeus.zip public.pem", "Failed to include public key into zeus archive ... exiting");
-    // Generate Checksums of archive zip files
-    cmdOutput = cmd("openssl sha256 ./assets/*", "Failed to generate chksum file for assets ... exiting");
 }
 
+// Get the MD5 Sum of the ./assets folder
+const md5Sums = cmd("openssl md5 ./assets/*", "Failed to generate chksum file for assets ... exiting");
+const version = cmd("cat version", "Failed to read the version file ... exiting");
+
 // Read in the checksum files from assets
-const fileContent = cmdOutput.toString();
-const ChksumEntries = fileContent.split("\n").filter(Boolean);
+const ChksumEntries = md5Sums.split("\n").filter(Boolean);
 var chksumObject = {}
 ChksumEntries.forEach(chksumEntry => {
     const entry = chksumEntry.split(')= ');
-    const fileName = entry[0].replace('SHA2-256(', '');
-    const sha256 = entry[1];
-    chksumObject[fileName] = sha256;
+    const fileName = entry[0].replace('MD5(', '');
+    const md5 = entry[1];
+    chksumObject[fileName] = version.trim() + "_" + md5;
 });
-//console.log(chksumObject);
 
 //////////////////////////////////
 //                              //

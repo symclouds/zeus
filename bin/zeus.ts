@@ -87,7 +87,7 @@ for(let itr = 0; itr < siteRegionsFlat.length; itr++) {
 }
 
 // Create the Zeus Agent Lambda Role
-let agentSecurity = new AgentSecurity(app, "AgentSecurity", {})
+let agentSecurity = new AgentSecurity(app, "ZeusAgentSecurity", {})
 agentSecurity.createSecurity(product, functions, siteRegionsFlat);
 
 // Create the Zeus Agent Site at each region
