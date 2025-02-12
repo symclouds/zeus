@@ -1,5 +1,5 @@
 {
-    "profile" : "themis",
+    "profile" : "hades",
     "logRetentionPeriod" : 1,
     "accessTokenDuration" : "6h",
     "refreshTokenDuration" : "30d",
