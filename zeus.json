@@ -1,21 +1,20 @@
 {
     "profile" : "hades",
     "logRetentionPeriod" : 1,
-    "accessTokenDuration" : "6h",
-    "refreshTokenDuration" : "30d",
-    "maxSessions" : -1,
-    "mfaEmail" : "themis-security@symclouds.com",
-    "totalSites": 1,   
+    "domain": "zeus.symclouds.com",
     "siteRegions":
     [
         {
             "region": "us-east-1"
+        },
+        {
+            "region": "us-east-2"
         }  
     ],
     "agent" : {
         "product":"zeus",
-        "email":"themis-security@symclouds.com",
+        "email":"iljazi@gmail.com",
         "tier" :"free",
-        "functions" : "login,register,mfa,reset,refresh,zeus"
+        "functions" : "zeus-token,zeus-authn,zeus-register,zeus-reset"
     }
 }
