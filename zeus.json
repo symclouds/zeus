@@ -1,5 +1,5 @@
 {
-    "profile" : "hades",
+    "profile" : "default",
     "logRetentionPeriod" : 1,
     "domain": "zeus.symclouds.com",
     "siteRegions":
