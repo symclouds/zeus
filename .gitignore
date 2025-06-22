@@ -5,6 +5,5 @@ deploy.log
 destroy.log
 private.pem
 public.pem
-assets
 agentBuild
 zeusBuild
