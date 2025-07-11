@@ -13,8 +13,6 @@
     ],
     "agent" : {
         "product":"zeus",
-        "email":"iljazi@gmail.com",
-        "tier" :"free",
-        "functions" : "zeus-token,zeus-authn,zeus-register,zeus-reset"
+        "sharedSecret":"0a0bf5e9e7b3151db6a85451d471de72c8ea577b91d316d4ff33d37535c223b2"
     }
 }
