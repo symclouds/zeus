@@ -12,7 +12,6 @@
         }  
     ],
     "agent" : {
-        "product":"zeus",
-        "sharedSecret":"0a0bf5e9e7b3151db6a85451d471de72c8ea577b91d316d4ff33d37535c223b2"
+        "product":"zeus"    
     }
 }
